@@ -1,9 +1,9 @@
 func generate(type: Type, methodRegistrar: MethodRegistrar, subscriptRegistrar: SubscriptRegistrar) async -> String {
-    var bufferStr: String = ""
+    var sourceryBuffer: String = ""
     var mockedCount = 0
     let autoMockable: Bool = type.inheritedTypes.contains("AutoMockable") || type.annotations["AutoMockable"] != nil
     let protocolToDecorate = types.protocols.first(where: { $0.name == (type.annotations["mock"] as? String) })
-    guard let aProtocol = autoMockable ? type : protocolToDecorate else { return bufferStr }
+    guard let aProtocol = autoMockable ? type : protocolToDecorate else { return sourceryBuffer }
     mockedCount += 1
     var current = Current()
     let associatedTypes: [String]? = Helpers.extractAssociatedTypes(from: aProtocol)
@@ -517,7 +517,7 @@ func generate(type: Type, methodRegistrar: MethodRegistrar, subscriptRegistrar: 
 <%_ } else { -%>
 <%_ } -%>
 // sourcery:end
-<%_ return bufferStr -%>
+<%_ return sourceryBuffer -%>
 <%_ } -%>
 
 <%# ================================================== SETUP -%><%_ -%>

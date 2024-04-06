@@ -1,9 +1,10 @@
-func generate(type: Type, methodRegistrar: MethodRegistrar, subscriptRegistrar: SubscriptRegistrar) async -> String {
+<%_
+func generate(type: Type, idx: Int, methodRegistrar: MethodRegistrar, subscriptRegistrar: SubscriptRegistrar) async -> (Int, String) {
     var sourceryBuffer: String = ""
     var mockedCount = 0
     let autoMockable: Bool = type.inheritedTypes.contains("AutoMockable") || type.annotations["AutoMockable"] != nil
     let protocolToDecorate = types.protocols.first(where: { $0.name == (type.annotations["mock"] as? String) })
-    guard let aProtocol = autoMockable ? type : protocolToDecorate else { return sourceryBuffer }
+    guard let aProtocol = autoMockable ? type : protocolToDecorate else { return (idx, sourceryBuffer) }
     mockedCount += 1
     var current = Current()
     let associatedTypes: [String]? = Helpers.extractAssociatedTypes(from: aProtocol)
@@ -517,7 +518,7 @@ func generate(type: Type, methodRegistrar: MethodRegistrar, subscriptRegistrar: 
 <%_ } else { -%>
 <%_ } -%>
 // sourcery:end
-<%_ return sourceryBuffer -%>
+<%_ return (idx, sourceryBuffer) -%>
 <%_ } -%>
 
 <%# ================================================== SETUP -%><%_ -%>
@@ -528,19 +529,17 @@ func generate(type: Type, methodRegistrar: MethodRegistrar, subscriptRegistrar: 
 
 <%_
 
-let content = try await withThrowingTaskGroup(of: String.self) { group in
-    for type in all {
+let content = try await withThrowingTaskGroup(of: (Int, String).self) { group in
+    for (idx, type) in all.enumerated() {
         group.addTask {
-            let methodRegistrar = MethodRegistrar()
-            let subscriptRegistrar = SubscriptRegistrar()
-            return await generate(type: type, methodRegistrar: methodRegistrar, subscriptRegistrar: subscriptRegistrar)
+            await generate(type: type, idx: idx, methodRegistrar: MethodRegistrar(), subscriptRegistrar: SubscriptRegistrar())
         }
     }
-    var fullContent = ""
-    for try await content in group {
-        fullContent.append(content)
+    var fullContent = [String](repeating: "", count: all.count)
+    for try await (idx, content) in group {
+        fullContent.insert(content, at: idx)
     }
-    return fullContent
+    return fullContent.joined(separator: "")
 }
 if content.isEmpty {
 -%>
